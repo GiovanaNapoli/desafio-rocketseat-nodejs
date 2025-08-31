@@ -1,6 +1,6 @@
 # Desafio Node.js - Rocketseat
 
-Uma API REST para gerenciamento de cursos desenvolvida com Node.js, Fastify e PostgreSQL.
+Uma API REST para gerenciamento de cursos e matrículas desenvolvida com Node.js, Fastify e PostgreSQL.
 
 ## 🚀 Tecnologias
 
@@ -11,76 +11,44 @@ Uma API REST para gerenciamento de cursos desenvolvida com Node.js, Fastify e Po
 - **Drizzle ORM** - ORM leve para TypeScript
 - **Zod** - Validação de schemas TypeScript-first
 - **Docker** - Containerização do banco de dados
+- **Vitest** - Framework de testes rápido
 
 ## 📋 Funcionalidades
 
-- ✅ Listar todos os cursos
+- ✅ Listar todos os cursos com paginação
 - ✅ Buscar curso por ID
 - ✅ Criar novo curso
+- ✅ Busca de cursos por título
+- ✅ Contagem de matrículas por curso
 - ✅ Documentação automática da API com Swagger
 - ✅ Validação de dados com Zod
 - ✅ Logs estruturados com Pino
+- ✅ Testes automatizados com cobertura
 
 ## 🛠️ Estrutura do Projeto
 
 ```
 src/
 ├── db/
-│   ├── client.ts      # Configuração do cliente do banco
-│   └── schema.ts      # Schema das tabelas
+│   ├── client.ts          # Configuração do cliente do banco
+│   ├── schema.ts          # Schema das tabelas (courses, users, enrollments)
+│   └── seed.ts            # Dados iniciais para desenvolvimento
 ├── routes/
-│   ├── create-course.ts      # Criar curso
-│   ├── get-course-by-id.ts   # Buscar curso por ID
-│   └── get-courses.ts        # Listar cursos
-└── server.ts          # Configuração do servidor
+│   ├── create-course.ts         # Criar curso
+│   ├── create-course.test.ts    # Testes de criação
+│   ├── get-course-by-id.ts      # Buscar curso por ID
+│   ├── get-course-by-id.test.ts # Testes de busca por ID
+│   ├── get-courses.ts           # Listar cursos (com busca e paginação)
+│   └── get-course.test.ts       # Testes de listagem
+├── test/
+│   └── factories/
+│       └── make-course.ts       # Factory para criação de cursos nos testes
+├── app.ts                 # Configuração da aplicação Fastify
+├── env.ts                 # Configuração de variáveis de ambiente
+└── server.ts              # Inicialização do servidor
 ```
 
-## � Fluxo da Aplicação
-
-```mermaid
-flowchart TD
-    A[Cliente] --> B{Requisição HTTP}
-    
-    B -->|GET /courses| C[Listar Cursos]
-    B -->|GET /course/:id| D[Buscar Curso por ID]
-    B -->|POST /courses| E[Criar Curso]
-    
-    C --> F[Validação Zod]
-    D --> G[Validação Zod + Params]
-    E --> H[Validação Zod + Body]
-    
-    F --> I[Consulta DB - SELECT *]
-    G --> J[Consulta DB - SELECT WHERE id]
-    H --> K[Validação Título Único]
-    
-    I --> L[Retorna Lista de Cursos]
-    J --> M{Curso Existe?}
-    K --> N[Inserção no DB]
-    
-    M -->|Sim| O[Retorna Curso Completo]
-    M -->|Não| P[Retorna 404]
-    
-    N --> Q[Retorna ID do Curso Criado]
-    
-    L --> R[Response 200 + JSON]
-    O --> S[Response 200 + JSON]
-    P --> T[Response 404]
-    Q --> U[Response 201 + JSON]
-    
-    R --> V[Cliente recebe dados]
-    S --> V
-    T --> V
-    U --> V
-    
-    style A fill:#e1f5fe
-    style B fill:#f3e5f5
-    style V fill:#e8f5e8
-    style I fill:#fff3e0
-    style J fill:#fff3e0
-    style N fill:#fff3e0
-```
-
-## �📊 Schema do Banco
+## 📊 Schema do Banco
 
 ### Tabela `courses`
 - `id` - UUID (Primary Key, gerado automaticamente)
@@ -91,6 +59,50 @@ flowchart TD
 - `id` - UUID (Primary Key, gerado automaticamente)
 - `name` - Text (obrigatório)
 - `email` - Text (obrigatório, único)
+
+### Tabela `enrollments`
+- `id` - UUID (Primary Key, gerado automaticamente)
+- `user_id` - UUID (Foreign Key para users)
+- `course_id` - UUID (Foreign Key para courses)
+- `created_at` - Timestamp (data de matrícula)
+
+## 📊 Fluxo da Aplicação
+
+```mermaid
+flowchart TD
+    A[Cliente] --> B{Endpoint}
+    
+    B -->|GET /courses| C[Listar Cursos]
+    B -->|GET /courses/:id| D[Buscar por ID]
+    B -->|POST /courses| E[Criar Curso]
+    
+    C --> F[Validação Query Params]
+    D --> G[Validação ID]
+    E --> H[Validação Body]
+    
+    F --> I[Busca com Filtros + Paginação]
+    G --> J[Busca por ID]
+    H --> K[Inserção no DB]
+    
+    I --> L[Lista + Total + Matrículas]
+    J --> M{Existe?}
+    K --> N[Curso Criado]
+    
+    M -->|Sim| O[Retorna Curso]
+    M -->|Não| P[404 Error]
+    
+    L --> Q[200 OK]
+    O --> R[200 OK] 
+    P --> S[404 Not Found]
+    N --> T[201 Created]
+    
+    style A fill:#e1f5fe
+    style B fill:#f3e5f5
+    style Q fill:#e8f5e8
+    style R fill:#e8f5e8
+    style S fill:#ffebee
+    style T fill:#e8f5e8
+```
 
 ## 🚀 Instalação e Execução
 
@@ -127,7 +139,12 @@ docker-compose up -d
 npm run db:migrate
 ```
 
-### 6. Inicie o servidor
+### 6. (Opcional) Popular o banco com dados iniciais
+```bash
+npm run db:seed
+```
+
+### 7. Inicie o servidor
 ```bash
 npm run dev
 ```
@@ -137,7 +154,12 @@ O servidor estará rodando em `http://localhost:3000`
 ## 📖 Endpoints da API
 
 ### **GET** `/courses`
-Lista todos os cursos
+Lista todos os cursos com paginação e filtros
+
+**Query Parameters:**
+- `search` (opcional) - Busca por título do curso
+- `orderby` (opcional) - Ordenação (padrão: "title")
+- `page` (opcional) - Página (padrão: 1, 10 itens por página)
 
 **Resposta (200):**
 ```json
@@ -145,13 +167,15 @@ Lista todos os cursos
   "courses": [
     {
       "id": "uuid",
-      "title": "Nome do Curso"
+      "title": "Nome do Curso",
+      "enrollments": 5
     }
-  ]
+  ],
+  "total": 1
 }
 ```
 
-### **GET** `/course/:id`
+### **GET** `/courses/:id`
 Busca um curso específico por ID
 
 **Parâmetros:**
@@ -207,8 +231,39 @@ npm run db:generate
 # Executar migrações
 npm run db:migrate
 
+# Popular banco com dados iniciais
+npm run db:seed
+
 # Abrir Drizzle Studio
 npm run db:studio
+
+# Executar testes
+npm run test
+
+# Executar testes com cobertura
+npm run test
+```
+
+## 🧪 Testes
+
+O projeto possui testes automatizados para todas as rotas da API:
+
+- **Criação de cursos** - Validação de entrada e resposta
+- **Listagem de cursos** - Teste de paginação e filtros
+- **Busca por ID** - Teste de sucesso e erro 404
+- **Coverage** - Cobertura de ~80% do código
+
+Para executar os testes:
+```bash
+npm run test
+```
+
+### Test Factory
+O projeto utiliza factories para criação de dados de teste, facilitando a manutenção e reutilização:
+
+```typescript
+// Criar curso para teste
+const course = await makeCourse("Título do Curso");
 ```
 
 ## 🐳 Docker
@@ -238,6 +293,13 @@ Os logs são estruturados usando **Pino** com formatação colorida para desenvo
 - Nível do log
 - Informações da requisição
 - Tempo de resposta
+
+## ⚡ Performance
+
+- **Paginação** - Listagem limitada a 10 itens por página
+- **Índices** - Campos únicos e chaves estrangeiras indexadas
+- **Fastify** - Framework otimizado para alta performance
+- **Drizzle ORM** - ORM leve com queries otimizadas
 
 ## 🤝 Contribuição
 
