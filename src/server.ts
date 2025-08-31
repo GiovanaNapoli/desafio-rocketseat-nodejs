@@ -1,8 +1,15 @@
 import fastify from "fastify";
-import crypto from "node:crypto";
-import { db } from "./db/client.ts";
-import { courses } from "./db/schema.ts";
-import { eq } from "drizzle-orm";
+import {
+  validatorCompiler,
+  serializerCompiler,
+  type ZodTypeProvider,
+  jsonSchemaTransform,
+} from "fastify-type-provider-zod";
+import fastifySwagger from "@fastify/swagger";
+import scalarAPIReference from "@scalar/fastify-api-reference";
+import { getCourses } from "./routes/get-courses.ts";
+import { getCoursesById } from "./routes/get-course-by-id.ts";
+import { createCourse } from "./routes/create-course.ts";
 
 const server = fastify({
   logger: {
@@ -15,51 +22,34 @@ const server = fastify({
       },
     },
   },
-});
+}).withTypeProvider<ZodTypeProvider>();
 
-server.get("/courses", async (request, reply) => {
-  const result = await db.select().from(courses);
+if (process.env.NODE_ENV === 'development') {
+  server.register(fastifySwagger, {
+    openapi: {
+      info: {
+        title: 'Desafio Node.js',
+        version: '1.0.0',
+      }
+    },
+    transform: jsonSchemaTransform,
+  })
+  
+  server.register(scalarAPIReference, {
+    routePrefix: '/docs',
+    configuration: {
+      theme: 'bluePlanet'
+    } 
+  })
+}
 
-  return reply.send({ courses: result });
-});
+server.setValidatorCompiler(validatorCompiler);
+server.setSerializerCompiler(serializerCompiler);
 
-server.get("/course/:id", async (request, reply) => {
-  type Params = {
-    id: string;
-  };
-  const params = request.params as Params;
-  const courseId = params.id;
 
-  const course = await db
-    .select()
-    .from(courses)
-    .where(eq(courses.id, courseId));
-
-  if (course) return reply.send({ course });
-
-  return reply.status(404).send();
-});
-
-server.post("/courses", async (request, reply) => {
-  type Body = {
-    title: string;
-  };
-
-  const body = request.body as Body;
-  const corseTitle = body.title;
-
-  if (!corseTitle)
-    return reply.status(400).send({ error: "Course title is required" });
-
-  const result = await db
-    .insert(courses)
-    .values({
-      title: corseTitle,
-    })
-    .returning();
-
-  reply.code(201).send({ id: result[0].id });
-});
+server.register(getCourses);
+server.register(getCoursesById);
+server.register(createCourse);
 
 server.listen({ port: 3000 }).then(() => {
   console.log("Server is running on http://localhost:3000");
