@@ -6,7 +6,7 @@ import { courses } from "../db/schema.ts";
 
 export const getCoursesById: FastifyPluginAsyncZod = async (server) => {
   server.get(
-    "/course/:id",
+    "/courses/:id",
     {
       schema: {
         tags: ["courses"],
