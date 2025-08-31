@@ -35,7 +35,52 @@ src/
 └── server.ts          # Configuração do servidor
 ```
 
-## 📊 Schema do Banco
+## � Fluxo da Aplicação
+
+```mermaid
+flowchart TD
+    A[Cliente] --> B{Requisição HTTP}
+    
+    B -->|GET /courses| C[Listar Cursos]
+    B -->|GET /course/:id| D[Buscar Curso por ID]
+    B -->|POST /courses| E[Criar Curso]
+    
+    C --> F[Validação Zod]
+    D --> G[Validação Zod + Params]
+    E --> H[Validação Zod + Body]
+    
+    F --> I[Consulta DB - SELECT *]
+    G --> J[Consulta DB - SELECT WHERE id]
+    H --> K[Validação Título Único]
+    
+    I --> L[Retorna Lista de Cursos]
+    J --> M{Curso Existe?}
+    K --> N[Inserção no DB]
+    
+    M -->|Sim| O[Retorna Curso Completo]
+    M -->|Não| P[Retorna 404]
+    
+    N --> Q[Retorna ID do Curso Criado]
+    
+    L --> R[Response 200 + JSON]
+    O --> S[Response 200 + JSON]
+    P --> T[Response 404]
+    Q --> U[Response 201 + JSON]
+    
+    R --> V[Cliente recebe dados]
+    S --> V
+    T --> V
+    U --> V
+    
+    style A fill:#e1f5fe
+    style B fill:#f3e5f5
+    style V fill:#e8f5e8
+    style I fill:#fff3e0
+    style J fill:#fff3e0
+    style N fill:#fff3e0
+```
+
+## �📊 Schema do Banco
 
 ### Tabela `courses`
 - `id` - UUID (Primary Key, gerado automaticamente)
