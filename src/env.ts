@@ -9,6 +9,7 @@ if (process.env.NODE_ENV === "test") {
 const requiredEnvVars = {
   DATABASE_URL: process.env.DATABASE_URL,
   NODE_ENV: process.env.NODE_ENV,
+  JWT_SECRET: process.env.JWT_SECRET,
 };
 
 for (const [key, value] of Object.entries(requiredEnvVars)) {
@@ -20,4 +21,5 @@ for (const [key, value] of Object.entries(requiredEnvVars)) {
 export const env = {
   DATABASE_URL: process.env.DATABASE_URL!,
   NODE_ENV: process.env.NODE_ENV! as "development" | "test" | "production",
+  JWT_SECRET: process.env.JWT_SECRET!,
 };

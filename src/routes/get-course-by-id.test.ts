@@ -1,14 +1,17 @@
 import { expect, test } from "vitest";
 import request from "supertest";
-import app from "../app.ts";
-import { faker } from "@faker-js/faker";
+import { server } from "../app.ts";
 import { makeCourse } from "../test/factories/make-course.ts";
+import { makeAuthenticatedUser } from "../test/factories/make-user.ts";
 
 test("get course by id", async () => {
-  await app.ready();
+  await server.ready();
 
   const course = await makeCourse();
-  const response = await request(app.server).get(`/courses/${course.id}`);
+  const { token } = await makeAuthenticatedUser("student");
+  const response = await request(server.server)
+    .get(`/courses/${course.id}`)
+    .set("Authorization", token);
 
   expect(response.status).toEqual(200);
   expect(response.body).toEqual({
@@ -21,11 +24,11 @@ test("get course by id", async () => {
 });
 
 test("return 404 for non existing courses", async () => {
-  await app.ready();
-
-  const response = await request(app.server).get(
-    `/courses/CBA2E131-C83C-471A-9DAC-4F4A84B55476`
-  );
+  await server.ready();
+  const { token } = await makeAuthenticatedUser("student");
+  const response = await request(server.server)
+    .get(`/courses/CBA2E131-C83C-471A-9DAC-4F4A84B55476`)
+    .set("Authorization", token);
 
   expect(response.status).toEqual(404);
 });

@@ -10,7 +10,8 @@ import scalarAPIReference from "@scalar/fastify-api-reference";
 import { getCourses } from "./routes/get-courses.ts";
 import { getCoursesById } from "./routes/get-course-by-id.ts";
 import { createCourse } from "./routes/create-course.ts";
-import { env } from "./env.js";
+import { loginRoute } from "./routes/login.ts";
+import { env } from "./env.ts";
 
 const server = fastify({
   logger: {
@@ -49,6 +50,7 @@ server.setSerializerCompiler(serializerCompiler);
 
 server.register(getCourses);
 server.register(getCoursesById);
+server.register(loginRoute);
 server.register(createCourse);
 
-export default server;
+export { server }
